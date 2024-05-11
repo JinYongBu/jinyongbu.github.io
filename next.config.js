@@ -8,4 +8,4 @@ const nextConfig = {
     unoptimized: true,
   },
 }
-module.exports = nextConfigs
+module.exports = nextConfig
