@@ -13,6 +13,10 @@ export function NavBar() {
             href: "/ideas",
             name: "Ideas"
         },
+        {
+            href: "/learning-record",
+            name: "Learning Record"
+        },
     ]
 
     return (
