@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Magic: Upright Cursive</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        /* --- 基础设置 --- */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000000;
+            font-family: 'Cinzel', serif;
+            user-select: none;
+        }
+        
+        #canvas-container { 
+            width: 100vw; height: 100vh; 
+            position: absolute; top: 0; left: 0; 
+            z-index: 1; 
+        }
+
+        #input_video { display: none; }
+
+        /* --- UI 层 --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            padding: 40px; box-sizing: border-box;
+            transition: opacity 1s;
+        }
+
+        .hud-header-top {
+            text-align: center; width: 100%; position: absolute; top: 40px; left: 0;
+        }
+
+        /* ▼▼▼ 修改点 2：使用 Great Vibes 字体样式 ▼▼▼ */
+        .hud-title {
+            color: #d4af37; 
+            font-family: 'Great Vibes', cursive; /* 使用更端正的 Great Vibes */
+            font-size: 7rem; /* 调整字号以适应新字体 */
+            font-weight: 400; 
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.8), 0 0 10px rgba(255, 215, 0, 0.3);
+            margin: 0; 
+            letter-spacing: 3px; /* 稍微增加间距 */
+            line-height: 1.2;
+        }
+        /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
+
+        .hud-subtitle {
+            color: #aebfab; font-size: 1.1rem; letter-spacing: 6px; margin-top: 15px; 
+            text-transform: uppercase; text-shadow: 0 0 10px rgba(174, 191, 171, 0.3);
+            font-family: 'Cinzel', serif; 
+        }
+
+        .sidebar {
+            position: absolute; left: 40px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; align-items: flex-start; gap: 30px;
+            pointer-events: auto;
+        }
+
+        .status-pill {
+            padding: 12px 30px; border: 2px solid rgba(212, 175, 55, 0.5);
+            background: rgba(0, 20, 0, 0.6); color: #d4af37; border-radius: 50px;
+            font-size: 1rem; backdrop-filter: blur(10px); transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); white-space: nowrap;
+        }
+
+        .controls { text-align: left; }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #8b0000 0%, #500000 100%);
+            border: 2px solid #ff4d4d; color: #fff; padding: 15px 40px;
+            font-family: 'Cinzel', serif; font-size: 1.1rem; cursor: pointer;
+            border-radius: 50px; box-shadow: 0 0 25px rgba(139, 0, 0, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s; text-transform: uppercase;
+            letter-spacing: 3px; display: inline-block; white-space: nowrap;
+        }
+        .btn-upload:hover {
+            transform: scale(1.05); box-shadow: 0 0 40px rgba(255, 77, 77, 0.8);
+            background: linear-gradient(135deg, #a00000 0%, #600000 100%);
+        }
+        input[type="file"] { display: none; }
+
+        .gesture-hint {
+            margin-top: 15px; font-size: 0.9rem; color: #ccc;
+            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 12px;
+            line-height: 1.8; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- 启动页 --- */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: #d4af37;
+        }
+        
+        /* 启动页标题也改为 Great Vibes */
+        #start-screen h1 {
+            font-family: 'Great Vibes', cursive; 
+            font-size: 9rem; 
+            margin: 0; 
+            text-shadow: 0 0 40px #d4af37;
+            font-weight: 400;
+        }
+
+        .start-btn {
+            margin-top: 50px; padding: 15px 60px; font-size: 2.5rem;
+            background: transparent; color: #d4af37; border: 3px solid #d4af37;
+            cursor: pointer; 
+            font-family: 'Great Vibes', cursive; /* 按钮也用花体 */
+            transition: all 0.3s;
+            border-radius: 50px;
+        }
+        .start-btn:hover {
+            background: #d4af37; color: #000; box-shadow: 0 0 50px rgba(212, 175, 55, 0.8);
+        }
+        .loader {
+            border: 4px solid rgba(212, 175, 55, 0.1); border-top: 4px solid #d4af37;
+            border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;
+            display: none; margin-top: 30px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1>Christmas Magic</h1>
+        <p style="letter-spacing: 4px; opacity: 0.8; font-size: 1.2rem; font-family: 'Cinzel';">Interactive Gesture Experience</p>
+        <button class="start-btn" id="btn-start">Enter The Magic</button>
+        <div class="loader" id="system-loader"></div>
+        <p id="loading-text" style="margin-top:15px; font-size:0.9rem; opacity:0; color:#aaa; font-family: 'Cinzel';">Initializing Camera & GPU...</p>
+    </div>
+
+    <div id="ui-layer" style="opacity: 0;">
+        <div class="hud-header-top">
+            <h1 class="hud-title">Merry Christmas</h1>
+            <div class="hud-subtitle">Memories in 2025</div>
+        </div>
+        <div class="sidebar">
+            <div id="status-pill" class="status-pill">Mode: System Standby</div>
+            <div class="controls">
+                <label class="btn-upload">
+                    <input type="file" id="photo-input" accept="image/*" multiple>
+                    + Upload Memories
+                </label>
+                <div class="gesture-hint">
+                    <div>✊ <b>Fist:</b> Form Tree</div>
+                    <div>🖐 <b>Open:</b> Scatter Stars</div>
+                    <div>👌 <b>Pinch:</b> Zoom Photo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <video id="input_video"></video>
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        const CONFIG = {
+            snowflakeCount: 4000, 
+            ballCount: 200, 
+            ballColors: {
+                gold: 0xffaa00,
+                red: 0x00C1FF,  
+                pink: 0xff0066,
+                green: 0x00ff44
+            },
+            treeHeight: 75,
+            treeRadius: 28,
+            camDistance: 130
+        };
+
+        const STATE = { TREE: 'tree', GALAXY: 'galaxy', ZOOM: 'zoom' };
+        
+        let scene, camera, renderer, composer;
+        let snowflakeMesh;
+        let ballMeshes = { gold: null, red: null, pink: null, green: null };
+        
+        let topStar, starGroup; 
+        let snowSystem;
+        let particles = [];
+        let photoObjects = [];
+        let rotationGroup = new THREE.Group();
+        let dummy = new THREE.Object3D();
+        let snowflakeTexture;
+        
+        let ribbonMeshes = [];
+        let ribbonMat; 
+        
+        let dimmerMesh;
+
+        let currState = STATE.TREE;
+        let zoomedPhoto = null;
+        let handVisible = false;
+        let lastGestureTime = 0;
+        let isCameraRunning = false;
+
+        document.getElementById('btn-start').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-start');
+            const loader = document.getElementById('system-loader');
+            const loadText = document.getElementById('loading-text');
+            btn.style.display = 'none'; loader.style.display = 'block'; loadText.style.opacity = 1;
+
+            snowflakeTexture = createSnowflakeTexture();
+            initThree();
+            animate();
+
+            try {
+                await startCamera();
+                document.getElementById('start-screen').style.opacity = 0;
+                setTimeout(() => {
+                    document.getElementById('start-screen').remove();
+                    document.getElementById('ui-layer').style.opacity = 1;
+                    updateUI(STATE.TREE);
+                }, 1000);
+            } catch (err) {
+                console.error(err);
+                loadText.innerText = "Camera Error. Check permissions."; loadText.style.color = "#ff4d4d";
+            }
+        });
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.008);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = CONFIG.camDistance;
+            camera.position.y = 20;
+            camera.lookAt(0, 10, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            scene.add(rotationGroup);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.02);
+            scene.add(ambient);
+
+            createDimmer(); 
+            createParticles();
+            createTopStar();
+            createRibbons(); 
+            createSnowBackground();
+            
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.05; 
+            bloomPass.strength = 1.4;  
+            bloomPass.radius = 0.7;    
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('photo-input').addEventListener('change', handleUpload);
+        }
+
+        function createDimmer() {
+            const geo = new THREE.PlaneGeometry(500, 500);
+            const mat = new THREE.MeshBasicMaterial({ 
+                color: 0x000000, 
+                transparent: true, 
+                opacity: 0, 
+                depthTest: false
+            });
+            dimmerMesh = new THREE.Mesh(geo, mat);
+            camera.add(dimmerMesh);
+            dimmerMesh.position.set(0, 0, -50); 
+            dimmerMesh.renderOrder = 999; 
+            scene.add(camera); 
+        }
+
+        function createRibbons() {
+            const ribbonCount = 2;
+            const pointsPerRibbon = 150;
+            
+            ribbonMat = new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0.5,
+                metalness: 0.9,
+                roughness: 0.1,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            for (let r = 0; r < ribbonCount; r++) {
+                const points = [];
+                const offsetAngle = r * Math.PI;
+                for (let i = 0; i <= pointsPerRibbon; i++) {
+                    const t = i / pointsPerRibbon; 
+                    const angle = t * Math.PI * 12 + offsetAngle; 
+                    const y = (1 - t) * CONFIG.treeHeight - (CONFIG.treeHeight / 2);
+                    const radius = t * (CONFIG.treeRadius + 2); 
+                    const x = Math.cos(angle) * radius;
+                    const z = Math.sin(angle) * radius;
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                const curve = new THREE.CatmullRomCurve3(points);
+                const geometry = new THREE.TubeGeometry(curve, 300, 0.4, 4, false); 
+                const mesh = new THREE.Mesh(geometry, ribbonMat);
+                ribbonMeshes.push(mesh);
+                rotationGroup.add(mesh);
+            }
+        }
+
+        function createSnowflakeTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,64,64);
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+            ctx.translate(32, 32);
+            for(let i=0; i<6; i++) {
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-8, -22); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(8, -22); ctx.stroke();
+                ctx.rotate(Math.PI / 3);
+            }
+            const texture = new THREE.Texture(canvas); texture.needsUpdate = true; return texture;
+        }
+
+        function createParticles() {
+            const snowflakeMat = new THREE.MeshStandardMaterial({
+                color: 0x000000, 
+                emissive: 0xffd700, 
+                emissiveIntensity: 0.64,
+                alphaMap: snowflakeTexture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                depthWrite: false, 
+                blending: THREE.AdditiveBlending 
+            });
+
+            const snowflakeGeo = new THREE.PlaneGeometry(0.8, 0.8);
+            snowflakeMesh = new THREE.InstancedMesh(snowflakeGeo, snowflakeMat, CONFIG.snowflakeCount);
+            rotationGroup.add(snowflakeMesh);
+
+            const ballGeo = new THREE.SphereGeometry(0.7, 16, 16);
+            const colorKeys = Object.keys(CONFIG.ballColors);
+            
+            colorKeys.forEach(key => {
+                const hex = CONFIG.ballColors[key];
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x000000, 
+                    emissive: hex,   
+                    emissiveIntensity: 2.5, 
+                    roughness: 0.2,
+                    metalness: 1.0,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                const mesh = new THREE.InstancedMesh(ballGeo, mat, Math.ceil(CONFIG.ballCount / 2)); 
+                ballMeshes[key] = mesh;
+                rotationGroup.add(mesh);
+            });
+
+            let indices = { snowflake: 0, gold: 0, red: 0, pink: 0, green: 0 };
+            const totalParticles = CONFIG.snowflakeCount + CONFIG.ballCount;
+
+            for (let i = 0; i < totalParticles; i++) {
+                const t = i / totalParticles;
+                const angle = t * Math.PI * 40 + (Math.random()*2.0);
+                const y = (1 - t) * CONFIG.treeHeight - (CONFIG.treeHeight / 2);
+                const r = t * CONFIG.treeRadius * (0.8 + Math.random()*0.4);
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+
+                const phi = Math.acos(-1 + (2 * i) / totalParticles);
+                const theta = Math.sqrt(totalParticles * Math.PI) * phi;
+                const galaxyR = 50 + Math.random() * 50;
+                const gx = galaxyR * Math.cos(theta) * Math.sin(phi);
+                const gy = galaxyR * Math.sin(theta) * Math.sin(phi);
+                const gz = galaxyR * Math.cos(phi);
+
+                let type = 'snowflake';
+                if (t > 0.15 && i < CONFIG.snowflakeCount + CONFIG.ballCount) {
+                    const ballProbability = (CONFIG.ballCount / totalParticles) * (t * 1.5); 
+                    if (Math.random() < ballProbability) {
+                        const colorKey = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                        type = colorKey;
+                    }
+                }
+
+                const pData = {
+                    id: i,
+                    progress: t, 
+                    pos: new THREE.Vector3(x, y, z),
+                    targetTree: new THREE.Vector3(x, y, z),
+                    targetGalaxy: new THREE.Vector3(gx, gy, gz),
+                    type: type,
+                    baseScale: (type === 'snowflake' ? 0.6 : 0.8) + Math.random() * 0.4
+                };
+                particles.push(pData);
+
+                dummy.position.set(x, y, z);
+                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                dummy.scale.setScalar(pData.baseScale);
+                dummy.updateMatrix();
+
+                if (type === 'snowflake') {
+                    if(indices.snowflake < CONFIG.snowflakeCount) {
+                        snowflakeMesh.setMatrixAt(indices.snowflake++, dummy.matrix);
+                    }
+                } else {
+                    if(ballMeshes[type] && indices[type] < Math.ceil(CONFIG.ballCount / 2)) {
+                        ballMeshes[type].setMatrixAt(indices[type]++, dummy.matrix);
+                    }
+                }
+            }
+        }
+
+        function createTopStar() {
+            const shape = new THREE.Shape();
+            const points = 5; const outerRadius = 3.0; const innerRadius = 1.3;
+            for(let i=0; i<points*2; i++){
+                const r = (i%2===0)? outerRadius : innerRadius;
+                const a = (i * Math.PI) / points;
+                const x = Math.cos(a)*r; const y = Math.sin(a)*r;
+                if(i===0) shape.moveTo(x,y); else shape.lineTo(x,y);
+            }
+            shape.closePath();
+            
+            const geom = new THREE.ExtrudeGeometry(shape, { depth: 0.5, bevelEnabled: true, bevelThickness:0.2, bevelSize:0.1 });
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x000000, 
+                emissive: 0xffd700, 
+                emissiveIntensity: 4.0, 
+                roughness: 0.2, metalness: 0.9
+            });
+            
+            topStar = new THREE.Mesh(geom, mat);
+            const light = new THREE.PointLight(0xffd700, 2, 60);
+            
+            starGroup = new THREE.Group();
+            starGroup.add(topStar);
+            starGroup.add(light);
+            
+            starGroup.position.set(0, CONFIG.treeHeight/2 + 2, 0);
+            topStar.rotation.z = Math.PI; 
+            
+            rotationGroup.add(starGroup);
+        }
+
+        function createSnowBackground() {
+            const snowGeo = new THREE.BufferGeometry();
+            const snowCount = 3500; 
+            const positions = new Float32Array(snowCount * 3);
+            const velocities = new Float32Array(snowCount);
+            for (let i = 0; i < snowCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 400;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 400;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+                velocities[i] = Math.random() * 0.6 + 0.3;
+            }
+            snowGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            snowGeo.userData.velocities = velocities;
+            const snowMat = new THREE.PointsMaterial({
+                color: 0xffffff, size: 1.3, transparent: true, opacity: 0.8,
+                blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            snowSystem = new THREE.Points(snowGeo, snowMat);
+            scene.add(snowSystem);
+        }
+
+        function handleUpload(e) {
+            const files = e.target.files; if(!files.length) return;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (evt) => { const img = new Image(); img.src = evt.target.result; img.onload = () => addPhotoToScene(img); };
+                reader.readAsDataURL(file);
+            });
+            const pill = document.getElementById('status-pill');
+            pill.innerText = "Photos Ready! Open hand to view."; pill.style.borderColor = "#ff4d4d"; pill.style.color = "#ff4d4d";
+        }
+
+        function addPhotoToScene(image) {
+            const tex = new THREE.Texture(image); tex.needsUpdate = true; tex.colorSpace = THREE.SRGBColorSpace;
+            const mat = new THREE.MeshBasicMaterial({ 
+                map: tex, side: THREE.DoubleSide, toneMapped: false 
+            }); 
+            
+            const aspect = image.width / image.height; const w = 6, h = 6 / aspect;
+            const geo = new THREE.PlaneGeometry(w, h); const mesh = new THREE.Mesh(geo, mat);
+            
+            const pData = particles[Math.floor(Math.random() * particles.length)];
+            mesh.position.copy(pData.pos);
+            mesh.userData = { targetGalaxy: pData.targetGalaxy, targetTree: pData.targetTree };
+            mesh.lookAt(0, pData.pos.y, 0); rotationGroup.add(mesh); photoObjects.push(mesh);
+        }
+
+        async function startCamera() {
+            const videoElement = document.getElementById('input_video');
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+            hands.onResults(onHandResults);
+            const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 });
+            await cameraUtils.start(); isCameraRunning = true;
+        }
+
+        function onHandResults(results) {
+            handVisible = false;
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                handVisible = true; processGesture(results.multiHandLandmarks[0]);
+            }
+        }
+
+        function processGesture(landmarks) {
+            const now = Date.now(); if (now - lastGestureTime < 800) return;
+            const wrist = landmarks[0]; const thumbTip = landmarks[4]; const indexTip = landmarks[8];
+            const middleTip = landmarks[12]; const pinkyTip = landmarks[20];
+            const d = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
+            const fingersOpen = (d(indexTip, wrist) > 0.3 && d(middleTip, wrist) > 0.3 && d(pinkyTip, wrist) > 0.3);
+            const fingersClosed = (d(indexTip, wrist) < 0.25 && d(middleTip, wrist) < 0.25);
+            const isPinch = d(thumbTip, indexTip) < 0.05;
+
+            if (fingersClosed && !isPinch && currState !== STATE.TREE) { switchState(STATE.TREE); lastGestureTime = now; }
+            else if (fingersOpen && currState === STATE.TREE) { switchState(STATE.GALAXY); lastGestureTime = now; }
+            else if (isPinch && currState === STATE.GALAXY && photoObjects.length > 0) { enterZoomMode(); lastGestureTime = now; }
+            else if (fingersOpen && currState === STATE.ZOOM) { exitZoomMode(); lastGestureTime = now; }
+
+            if (currState === STATE.GALAXY && !isPinch && handVisible) {
+                rotationGroup.rotation.y += (landmarks[9].x - 0.5) * 0.1;
+                rotationGroup.rotation.x = (landmarks[9].y - 0.5) * 0.3;
+            }
+        }
+
+        function switchState(newState) {
+            currState = newState; updateUI(newState); const duration = 2.0;
+            
+            particles.forEach(p => {
+                const target = (newState === STATE.TREE) ? p.targetTree : p.targetGalaxy;
+                gsap.to(p.pos, { x: target.x, y: target.y, z: target.z, duration: duration + Math.random(), ease: "power2.inOut" });
+            });
+            
+            photoObjects.forEach(mesh => {
+                const target = mesh.userData[(newState === STATE.TREE) ? 'targetTree' : 'targetGalaxy'];
+                gsap.to(mesh.scale, {x:1, y:1, z:1, duration: 1});
+                gsap.to(mesh.position, {
+                    x: target.x, y: target.y, z: target.z, duration: duration, ease: "power2.inOut",
+                    onUpdate: () => { if(newState === STATE.TREE) mesh.lookAt(0, mesh.position.y, 0); else mesh.lookAt(camera.position); }
+                });
+            });
+
+            if(starGroup) {
+                let targetPos, targetRot;
+                if (newState === STATE.GALAXY) {
+                     targetPos = { x: 0, y: 10, z: 0 }; 
+                     targetRot = "+=" + Math.PI * 4; 
+                     gsap.to(starGroup.rotation, { y: targetRot, duration: 20, ease: "none", repeat: -1 });
+                } else {
+                     targetPos = { x: 0, y: CONFIG.treeHeight/2 + 2, z: 0 };
+                     gsap.killTweensOf(starGroup.rotation);
+                     gsap.to(starGroup.rotation, { y: 0, duration: duration, ease: "power2.inOut" });
+                }
+                
+                gsap.to(starGroup.position, {
+                    x: targetPos.x, y: targetPos.y, z: targetPos.z,
+                    duration: duration,
+                    ease: "power3.inOut"
+                });
+            }
+
+            if (ribbonMeshes.length > 0) {
+                ribbonMeshes.forEach((mesh, index) => {
+                    if (newState === STATE.GALAXY) {
+                        gsap.to(mesh.position, { y: -100, duration: 2.0, ease: "power2.in" });
+                        gsap.to(mesh.material, { opacity: 0, duration: 1.5 });
+                    } else {
+                        gsap.to(mesh.position, { y: 0, duration: 2.5, ease: "back.out(0.8)", delay: index * 0.2 });
+                        gsap.to(mesh.material, { opacity: 0.4, duration: 2.0, delay: index * 0.2 });
+                    }
+                });
+            }
+        }
+
+        function enterZoomMode() {
+            currState = STATE.ZOOM; updateUI(STATE.ZOOM); if(photoObjects.length === 0) return;
+            zoomedPhoto = photoObjects[Math.floor(Math.random() * photoObjects.length)];
+            
+            camera.attach(zoomedPhoto);
+
+            const targetDistance = 25;
+
+            gsap.to(zoomedPhoto.position, { x: 0, y: 0, z: -targetDistance, duration: 1.5, ease: "back.out(1.5)" });
+            gsap.to(zoomedPhoto.rotation, { x: 0, y: 0, z: 0, duration: 1.5 });
+
+            const vFovRads = camera.fov * Math.PI / 180; 
+            const visibleHeight = 2 * Math.tan(vFovRads / 2) * targetDistance;
+            const visibleWidth = visibleHeight * (window.innerWidth / window.innerHeight);
+            const targetPhotoWidth = visibleWidth * (2 / 3);
+            const baseMeshWidth = 6;
+            const targetScale = targetPhotoWidth / baseMeshWidth;
+
+            gsap.to(zoomedPhoto.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 1.5 });
+
+            if(dimmerMesh) {
+                gsap.to(dimmerMesh.material, { opacity: 0.85, duration: 1.0 });
+            }
+        }
+
+        function exitZoomMode() {
+            currState = STATE.GALAXY; updateUI(STATE.GALAXY);
+            if(zoomedPhoto) {
+                rotationGroup.attach(zoomedPhoto);
+                const target = zoomedPhoto.userData.targetGalaxy;
+                gsap.to(zoomedPhoto.position, { x: target.x, y: target.y, z: target.z, duration: 1.2, ease: "power2.inOut" });
+                gsap.to(zoomedPhoto.scale, { x: 1, y: 1, z: 1, duration: 1.2 }); 
+                zoomedPhoto = null;
+            }
+
+            if(dimmerMesh) {
+                gsap.to(dimmerMesh.material, { opacity: 0, duration: 1.0 });
+            }
+        }
+
+        function updateUI(state) {
+            const pill = document.getElementById('status-pill'); let text = "", color = "";
+            switch(state) {
+                case STATE.TREE: text = "Mode: Christmas Tree 🎄"; color = "#d4af37"; break;
+                case STATE.GALAXY: text = "Mode: Stardust Galaxy ✨"; color = "#aebfab"; break;
+                case STATE.ZOOM: text = "Mode: Memory Focus 📸"; color = "#ff4d4d"; break;
+            }
+            pill.innerText = text; pill.style.color = color; pill.style.borderColor = color;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() * 0.001;
+
+            if (ribbonMat) {
+                ribbonMat.emissiveIntensity = 0.5 + Math.sin(time * 1.5) * 0.2;
+            }
+
+            let indices = { snowflake: 0, gold: 0, red: 0, pink: 0, green: 0 };
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                dummy.position.copy(p.pos);
+                
+                if(p.type === 'snowflake') {
+                    dummy.rotation.x += 0.0002; dummy.rotation.y += 0.0002; 
+                    const flowWave = Math.sin(time * 2.0 - p.progress * 5.0);
+                    let scale = p.baseScale * (1. + flowWave * 0.2); 
+                    dummy.scale.setScalar(scale);
+                } else {
+                    let blink = Math.sin(time * 3.0 + p.id) * 0.2 + 1.0;
+                    dummy.scale.setScalar(p.baseScale * blink);
+                }
+
+                dummy.updateMatrix();
+
+                if (p.type === 'snowflake') {
+                    if(indices.snowflake < CONFIG.snowflakeCount) {
+                        snowflakeMesh.setMatrixAt(indices.snowflake++, dummy.matrix);
+                    }
+                } else {
+                    if(ballMeshes[p.type]) {
+                        ballMeshes[p.type].setMatrixAt(indices[p.type]++, dummy.matrix);
+                    }
+                }
+            }
+            
+            snowflakeMesh.instanceMatrix.needsUpdate = true;
+            Object.values(ballMeshes).forEach(mesh => {
+                if(mesh) mesh.instanceMatrix.needsUpdate = true;
+            });
+
+            if (snowSystem) {
+                const positions = snowSystem.geometry.attributes.position.array;
+                const velocities = snowSystem.geometry.userData.velocities;
+                for (let i = 0; i < positions.length / 3; i++) {
+                    positions[i * 3 + 1] -= velocities[i];
+                    if (positions[i * 3 + 1] < -200) positions[i * 3 + 1] = 200;
+                }
+                snowSystem.geometry.attributes.position.needsUpdate = true;
+                rotationGroup.rotation.y += 0.003;
+            }
+
+            if (topStar && currState === STATE.TREE) topStar.rotation.z -= 0.01;
+            composer.render();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
